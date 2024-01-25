@@ -28,6 +28,17 @@ def extract_features(image_path):
     canny_edges = feature.canny(gray_image)
     canny_edges_mean = canny_edges.mean()
 
+    # Visualizza l'immagine originale e i bordi rilevati con Canny
+    plt.subplot(1, 2, 1)
+    plt.imshow(image)
+    plt.title('Immagine originale')
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(canny_edges, cmap='gray')
+    plt.title('Bordi con Canny')
+
+    plt.show()
+
     # Puoi aggiungere ulteriori feature qui in base alle tue esigenze
     # ...
 
@@ -64,11 +75,23 @@ def segment_congiuntiva(original_image):
     # Estrai la parte dell'immagine originale corrispondente alla maschera
     congiuntiva_region = cv2.bitwise_and(original_image, mask)
 
+    # Visualizza l'immagine originale e la parte della congiuntiva
+    plt.subplot(1, 2, 1)
+    plt.imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
+    plt.title('Immagine originale')
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(cv2.cvtColor(congiuntiva_region, cv2.COLOR_BGR2RGB))
+    plt.title('Parte della congiuntiva')
+
+    plt.show()
+
     return congiuntiva_region
 
 # Percorso alla cartella contenente le immagini
 # inserire percorso dataset
-image_folder_path = 'C:\\Users\\ruggi\\Desktop\\Dimauro\\database_sclere\\Italiano congiuntive\\Dataset congiuntive gruppo anemia  organizzato 28 mar 2020\\Trasfusionale congiuntive\\'
+script_directory = os.path.dirname(os.path.abspath(__file__))
+image_folder_path = os.path.join(script_directory, 'dataset')
 
 print("Percorso cartella: ", image_folder_path);
 
