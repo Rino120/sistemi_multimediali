@@ -50,68 +50,37 @@ def extract_features(congiuntiva_region):
 
 # Funzione per estrarre la parte della congiuntiva da un'immagine
 def segment_congiuntiva(original_image):
-    print("chiamata a segmentcongiutiva...")
+    print("chiamata a segmentcongiutiva...");
+    # Converti l'immagine in scala di grigi
+    gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 
-    # Estrai il canale V (value) dalla rappresentazione HSV dell'immagine
-    hsv_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2HSV)
-    v_channel = hsv_image[:,:,2]
+    # Applica un filtro di smooth per ridurre il rumore
+    blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
 
-    # Fase 1: Rimuovi le parti scure
-    _, binary_mask_dark = cv2.threshold(v_channel, 100, 255, cv2.THRESH_BINARY_INV)
-    binary_mask_dark = cv2.morphologyEx(binary_mask_dark, cv2.MORPH_OPEN, kernel=np.ones((5, 5), np.uint8))
-    binary_mask_dark = cv2.morphologyEx(binary_mask_dark, cv2.MORPH_CLOSE, kernel=np.ones((5, 5), np.uint8))
+    # Esegui la segmentazione utilizzando il metodo di Otsu
+    _, binary_mask = cv2.threshold(blurred_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    # Fase 2: Rimuovi le parti chiare
-    _, binary_mask_light = cv2.threshold(v_channel, 200, 255, cv2.THRESH_BINARY)
-    binary_mask_light = cv2.morphologyEx(binary_mask_light, cv2.MORPH_OPEN, kernel=np.ones((5, 5), np.uint8))
-    binary_mask_light = cv2.morphologyEx(binary_mask_light, cv2.MORPH_CLOSE, kernel=np.ones((5, 5), np.uint8))
+    # Trova i contorni nella maschera binaria
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Combinazione delle maschere utilizzando l'operatore AND
-    binary_mask_combined = cv2.bitwise_and(binary_mask_dark, binary_mask_light)
+    # Trova il contorno più grande (presumibilmente la congiuntiva)
+    largest_contour = max(contours, key=cv2.contourArea)
 
-    # Visualizza le maschere binarie
-    plt.subplot(2, 3, 1)
-    plt.imshow(binary_mask_dark, cmap='gray')
-    plt.title('Maschera Scure')
+    # Crea una maschera vuota delle stesse dimensioni dell'immagine originale
+    mask = np.zeros_like(original_image)
 
-    plt.subplot(2, 3, 2)
-    plt.imshow(binary_mask_light, cmap='gray')
-    plt.title('Maschera Chiare')
+    # Disegna il contorno sulla maschera
+    cv2.drawContours(mask, [largest_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
 
-    plt.subplot(2, 3, 3)
-    plt.imshow(binary_mask_combined, cmap='gray')
-    plt.title('Maschera Combinata')
-
-    # Trova i contorni nella maschera binaria combinata
-    contours, _ = cv2.findContours(binary_mask_combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Filtra i contorni in base a proprietà morfologiche (ad esempio, lunghezza)
-    min_contour_length = 100  # Regola questo valore in base alle tue esigenze
-    filtered_contours = [contour for contour in contours if cv2.arcLength(contour, True) > min_contour_length]
-
-    # Verifica se ci sono contorni prima di procedere
-    if filtered_contours:
-        # Trova il contorno più grande tra quelli filtrati
-        largest_contour = max(filtered_contours, key=cv2.contourArea)
-
-        # Crea una maschera vuota delle stesse dimensioni dell'immagine originale
-        mask = np.zeros_like(original_image)
-
-        # Disegna il contorno sulla maschera
-        cv2.drawContours(mask, [largest_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
-
-        # Estrai la parte dell'immagine originale corrispondente alla maschera
-        congiuntiva_region = cv2.bitwise_and(original_image, mask)
-    else:
-        print("Nessun contorno trovato.")
-        congiuntiva_region = np.zeros_like(original_image)  # Immagine vuota
+    # Estrai la parte dell'immagine originale corrispondente alla maschera
+    congiuntiva_region = cv2.bitwise_and(original_image, mask)
 
     # Visualizza l'immagine originale e la parte della congiuntiva
-    plt.subplot(2, 3, 4)
+    plt.subplot(1, 2, 1)
     plt.imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
     plt.title('Immagine originale')
 
-    plt.subplot(2, 3, 5)
+    plt.subplot(1, 2, 2)
     plt.imshow(cv2.cvtColor(congiuntiva_region, cv2.COLOR_BGR2RGB))
     plt.title('Parte della congiuntiva')
 
