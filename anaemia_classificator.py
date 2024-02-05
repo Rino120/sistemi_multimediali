@@ -83,6 +83,8 @@ for filename in os.listdir(image_folder_path):
         # Trova la riga corrispondente nel DataFrame
         #row = df[df['codice_immagine'] == image_code]
 
+# ruggi
+
 
 # percentage_second_class = 0.2
 
