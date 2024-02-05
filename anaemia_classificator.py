@@ -29,18 +29,12 @@ excel_file_path = os.path.join(script_directory, 'dataset_pazienti.xlsx')
 print(excel_file_path);
 
 # leggi le colonne codice, sesso, eta della riga 2 dal file excel
-# aggiungi al data frame relativo al file excel 
-# excel_data = pd.read_excel(excel_file_path, usecols=['Codice', 'Sesso', 'Età'], header=1)
-
+# aggiungi al data frame relativo al file excel
 excel_df = pd.read_excel(excel_file_path, usecols=['Codice', 'Sesso', 'Età'], header=1)
 
 print(excel_df.head())
 
-# dataFrame per salvare le features relative all'immagine processate
-features_df = pd.DataFrame()
-
 # Lista per memorizzare le feature e le etichette
-#features_list = []
 labels_list = []
 
 # Definizione della soglia per i livelli di emoglobina
@@ -54,7 +48,9 @@ for filename in os.listdir(image_folder_path):
         # Costruzione del percorso completo dell'immagine
         image_path = os.path.join(image_folder_path, filename)
 
-        # print("percorso immagine: ", image_path);
+        # Estrai il codice dell'immagine dal nome del file (T_i da T_i_84375893)
+        image_code = '_'.join(filename.split('_')[:2])
+        print("codice immagine estratto: ", image_code);
 
         # Caricamento dell'immagine utilizzando skimage
         image = io.imread(image_path)
@@ -71,20 +67,12 @@ for filename in os.listdir(image_folder_path):
         # Aggiunta dell'etichetta se necessario
         labels_list.append(label)
 
-        # Aggiunta delle feature alla data frame
-        features_df = features_df.append(features, ignore_index=True)
+        # Aggiungi una nuova colonna per ciascuna feature nel DataFrame excel_df
+        for feature_name, feature_value in features.items():
+            excel_df.loc[excel_df['Codice'] == image_code, feature_name] = feature_value
 
-        print(features_df.head())
-
-        # Estrai il codice dell'immagine dal nome del file (T_i da T_i_84375893)
-        image_code = '_'.join(filename.split('_')[:2])
-        print("codice immagine estratto: ", image_code);
-        
-        # Trova la riga corrispondente nel DataFrame
-        #row = df[df['codice_immagine'] == image_code]
-
-# ruggi
-
+        # Visualizza solo la riga corrispondente all'immagine in fase di elaborazione
+        print(excel_df[excel_df['Codice'] == image_code])
 
 # percentage_second_class = 0.2
 
