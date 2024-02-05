@@ -2,7 +2,8 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
-from skimage import io, color, feature
+from skimage import io, color
+import skimage.filters as filters
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, auc, classification_report, confusion_matrix, roc_curve
@@ -46,45 +47,38 @@ def extract_features(congiuntiva_region):
     return {
         'hemoglobin_level': hemoglobin_level,
         # Aggiungi altre feature qui in base alle tue esigenze
-    }
+    } 
+
 
 # Funzione per estrarre la parte della congiuntiva da un'immagine
-def segment_congiuntiva(original_image):
-    print("chiamata a segmentcongiutiva...");
-    # Converti l'immagine in scala di grigi
-    gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+def segmentation_congiuntiva(image):
+    # Converti l'immagine in spazio colore Lab
+    lab_image = color.rgb2lab(image)
 
-    # Applica un filtro di smooth per ridurre il rumore
-    blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+    # Estrai il canale a* (che rappresenta la differenza tra rosso e verde)
+    a_channel = lab_image[:, :, 1]
 
-    # Esegui la segmentazione utilizzando il metodo di Otsu
-    _, binary_mask = cv2.threshold(blurred_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # Applica la sogliatura adattiva sul canale a*
+    thresh = filters.threshold_li(a_channel)
 
     # Trova i contorni nella maschera binaria
-    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours((a_channel > thresh).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Trova il contorno più grande (presumibilmente la congiuntiva)
+    # Trova il contorno più grande
     largest_contour = max(contours, key=cv2.contourArea)
 
     # Crea una maschera vuota delle stesse dimensioni dell'immagine originale
-    mask = np.zeros_like(original_image)
+    mask = np.zeros_like(image, dtype=np.uint8)
 
     # Disegna il contorno sulla maschera
     cv2.drawContours(mask, [largest_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
 
-    # Estrai la parte dell'immagine originale corrispondente alla maschera
-    congiuntiva_region = cv2.bitwise_and(original_image, mask)
+    # Usa np.where per ottenere l'immagine con la congiuntiva e il resto dell'immagine
+    congiuntiva_region = np.where(mask > 0, image, 0)
 
     # Visualizza l'immagine originale e la parte della congiuntiva
-    plt.subplot(1, 2, 1)
-    plt.imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
-    plt.title('Immagine originale')
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(cv2.cvtColor(congiuntiva_region, cv2.COLOR_BGR2RGB))
-    plt.title('Parte della congiuntiva')
-
-    plt.show()
+    io.imshow_collection([image, congiuntiva_region])
+    io.show()
 
     return congiuntiva_region
 
@@ -113,10 +107,12 @@ for filename in os.listdir(image_folder_path):
         # print("percorso immagine: ", image_path);
 
         # Caricamento dell'immagine utilizzando OpenCV
-        original_image = cv2.imread(image_path)
+        # original_image = cv2.imread(image_path)
+
+        image = io.imread(image_path)
 
         # Esegui la segmentazione per isolare la parte relativa alla congiuntiva
-        congiuntiva_region = segment_congiuntiva(original_image)
+        congiuntiva_region = segmentation_congiuntiva(image)
 
         # Esegui l'estrazione delle feature sulla parte della congiuntiva
         features = extract_features(congiuntiva_region)
