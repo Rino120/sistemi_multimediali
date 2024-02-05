@@ -10,77 +10,11 @@ from sklearn.metrics import accuracy_score, auc, classification_report, confusio
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Funzione per l'estrazione delle feature da un'immagine
-def extract_features(congiuntiva_region):
-    print("chiamata a extract features...")
-    #print("Percorso immagine: ", image_path)
-    
-    # Caricamento dell'immagine utilizzando la libreria skimage
-    # passo l'immagine segmentata
-    image = congiuntiva_region
+# per la segmentazione delle immagini
+from segmentation import segmentation_congiuntiva
 
-    # gestisce il caso in cui non legge l'immagine
-    if image is None:
-        print(f"Errore: Impossibile leggere l'immagine {image_path}")
-        return None
-
-    # Estrai la componente rossa dell'immagine
-    red_channel = image[:, :, 2]
-
-    # Calcola la media dei livelli di emoglobina (o la tua metrica desiderata)
-    hemoglobin_level = np.mean(red_channel)
-
-    print("livello emoglobina: ", hemoglobin_level);
-
-    # Visualizza l'immagine originale e la componente rossa
-    plt.subplot(1, 2, 1)
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    plt.title('Immagine originale')
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(red_channel, cmap='gray')
-    plt.title('Componente rossa')
-
-    plt.show()
-
-    # Restituzione delle feature estratte come un dizionario
-    return {
-        'hemoglobin_level': hemoglobin_level,
-        # Aggiungi altre feature qui in base alle tue esigenze
-    } 
-
-
-# Funzione per estrarre la parte della congiuntiva da un'immagine
-def segmentation_congiuntiva(image):
-    # Converti l'immagine in spazio colore Lab
-    lab_image = color.rgb2lab(image)
-
-    # Estrai il canale a* (che rappresenta la differenza tra rosso e verde)
-    a_channel = lab_image[:, :, 1]
-
-    # Applica la sogliatura adattiva sul canale a*
-    thresh = filters.threshold_li(a_channel)
-
-    # Trova i contorni nella maschera binaria
-    contours, _ = cv2.findContours((a_channel > thresh).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Trova il contorno più grande
-    largest_contour = max(contours, key=cv2.contourArea)
-
-    # Crea una maschera vuota delle stesse dimensioni dell'immagine originale
-    mask = np.zeros_like(image, dtype=np.uint8)
-
-    # Disegna il contorno sulla maschera
-    cv2.drawContours(mask, [largest_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
-
-    # Usa np.where per ottenere l'immagine con la congiuntiva e il resto dell'immagine
-    congiuntiva_region = np.where(mask > 0, image, 0)
-
-    # Visualizza l'immagine originale e la parte della congiuntiva
-    io.imshow_collection([image, congiuntiva_region])
-    io.show()
-
-    return congiuntiva_region
+# eper l'estrazione delle feature
+from extractor import extract_features
 
 # Percorso alla cartella contenente le immagini
 # inserire percorso dataset
@@ -106,9 +40,7 @@ for filename in os.listdir(image_folder_path):
 
         # print("percorso immagine: ", image_path);
 
-        # Caricamento dell'immagine utilizzando OpenCV
-        # original_image = cv2.imread(image_path)
-
+        # Caricamento dell'immagine utilizzando skimage
         image = io.imread(image_path)
 
         # Esegui la segmentazione per isolare la parte relativa alla congiuntiva

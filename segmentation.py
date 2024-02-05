@@ -1,4 +1,3 @@
-import os
 import skimage.io as io
 import skimage.filters as filters
 import skimage.segmentation as seg
@@ -35,11 +34,4 @@ def segmentation_congiuntiva(image):
     io.imshow_collection([image, congiuntiva_region])
     io.show()
 
-script_directory = os.path.dirname(os.path.abspath(__file__))
-image_folder_path = os.path.join(script_directory, 'dataset')
-
-for filename in os.listdir(image_folder_path):
-    if filename.endswith('.jpg') or filename.endswith('.png'):
-        image_path = os.path.join(image_folder_path, filename)
-        image = io.imread(image_path)
-        segmentation_congiuntiva(image)
+    return congiuntiva_region
