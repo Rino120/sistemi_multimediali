@@ -21,8 +21,26 @@ image_folder_path = os.path.join(script_directory, 'dataset')
 
 print("Percorso cartella: ", image_folder_path);
 
+# Leggi file excel
+# Sostituisci 'nome_file_excel.xlsx' con il nome effettivo del tuo file Excel
+script_directory = os.path.dirname(os.path.abspath(__file__))
+excel_file_path = os.path.join(script_directory, 'dataset_pazienti.xlsx')
+
+print(excel_file_path);
+
+# leggi le colonne codice, sesso, eta della riga 2 dal file excel
+# aggiungi al data frame relativo al file excel 
+# excel_data = pd.read_excel(excel_file_path, usecols=['Codice', 'Sesso', 'Età'], header=1)
+
+excel_df = pd.read_excel(excel_file_path, usecols=['Codice', 'Sesso', 'Età'], header=1)
+
+print(excel_df.head())
+
+# dataFrame per salvare le features relative all'immagine processate
+features_df = pd.DataFrame()
+
 # Lista per memorizzare le feature e le etichette
-features_list = []
+#features_list = []
 labels_list = []
 
 # Definizione della soglia per i livelli di emoglobina
@@ -53,74 +71,84 @@ for filename in os.listdir(image_folder_path):
         # Aggiunta dell'etichetta se necessario
         labels_list.append(label)
 
-        # Aggiunta delle feature alla lista
-        features_list.append(features)
+        # Aggiunta delle feature alla data frame
+        features_df = features_df.append(features, ignore_index=True)
 
-percentage_second_class = 0.2
+        print(features_df.head())
 
-# Creazione di un DataFrame pandas con le feature
-df = pd.DataFrame(features_list)
+        # Estrai il codice dell'immagine dal nome del file (T_i da T_i_84375893)
+        image_code = '_'.join(filename.split('_')[:2])
+        print("codice immagine estratto: ", image_code);
+        
+        # Trova la riga corrispondente nel DataFrame
+        #row = df[df['codice_immagine'] == image_code]
 
-# Stampa il DataFrame come report di esempio
-print(df.head())
 
-# Aggiunta di colonne con le etichette se necessario
-df['Label'] = labels_list
+# percentage_second_class = 0.2
 
-df['Label'] = np.random.choice([0, 1], size=len(df), p=[1 - percentage_second_class, percentage_second_class])
+# # Creazione di un DataFrame pandas con le feature
+# df = pd.DataFrame(features_list)
 
-print(df['Label'].value_counts())
+# # Stampa il DataFrame come report di esempio
+# print(df.head())
 
-# Esegui l'analisi delle feature e l'addestramento del modello come nel tuo caso
-# Assumendo che tu abbia già creato e popolato il DataFrame 'df' con le feature estratte
+# # Aggiunta di colonne con le etichette se necessario
+# df['Label'] = labels_list
 
-# Divisione del DataFrame in feature (X) ed etichette (y)
-X = df.drop('Label', axis=1)  # Rimuovi la colonna 'Label' se presente
-y = df['Label']
+# df['Label'] = np.random.choice([0, 1], size=len(df), p=[1 - percentage_second_class, percentage_second_class])
 
-# Divisione del dataset in set di addestramento e set di test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# print(df['Label'].value_counts())
 
-# Creazione e addestramento del modello di regressione logistica
-model = LogisticRegression()
-model.fit(X_train, y_train)
+# # Esegui l'analisi delle feature e l'addestramento del modello come nel tuo caso
+# # Assumendo che tu abbia già creato e popolato il DataFrame 'df' con le feature estratte
 
-# Predizioni sul set di test
-predictions = model.predict(X_test)
+# # Divisione del DataFrame in feature (X) ed etichette (y)
+# X = df.drop('Label', axis=1)  # Rimuovi la colonna 'Label' se presente
+# y = df['Label']
 
-# Valutazione delle prestazioni del modello
-accuracy = accuracy_score(y_test, predictions)
-report = classification_report(y_test, predictions)
-conf_matrix = confusion_matrix(y_test, predictions)
+# # Divisione del dataset in set di addestramento e set di test
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Stampa risultati
-print(f'Accuracy: {accuracy}')
-print(f'Classification Report:\n{report}')
-print(f'Confusion Matrix:\n{conf_matrix}')
+# # Creazione e addestramento del modello di regressione logistica
+# model = LogisticRegression()
+# model.fit(X_train, y_train)
 
-# servono per capire quanto bene lavora il modello di regressione logistica
-# matrice di confusione valuta i falsi positivi e negativi e i veri positivi e negativi
-# Visualizzazione della matrice di confusione
-plt.figure(figsize=(8, 6))
-sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Classe 0', 'Classe 1'], yticklabels=['Classe 0', 'Classe 1'])
-plt.xlabel('Predizione')
-plt.ylabel('Verità')
-plt.title('Matrice di Confusione')
-plt.show()
+# # Predizioni sul set di test
+# predictions = model.predict(X_test)
 
-# Curve ROC
-fpr, tpr, thresholds = roc_curve(y_test, model.predict_proba(X_test)[:, 1])
-roc_auc = auc(fpr, tpr)
+# # Valutazione delle prestazioni del modello
+# accuracy = accuracy_score(y_test, predictions)
+# report = classification_report(y_test, predictions)
+# conf_matrix = confusion_matrix(y_test, predictions)
 
-# fornisce una visione complessiva delle prestazioni del modello al variare della soglia di decisione
-# Visualizzazione della curva ROC
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('Tasso di Falsi Positivi')
-plt.ylabel('Tasso di Veri Positivi')
-plt.title('Curva ROC')
-plt.legend(loc="lower right")
-plt.show()
+# # Stampa risultati
+# print(f'Accuracy: {accuracy}')
+# print(f'Classification Report:\n{report}')
+# print(f'Confusion Matrix:\n{conf_matrix}')
+
+# # servono per capire quanto bene lavora il modello di regressione logistica
+# # matrice di confusione valuta i falsi positivi e negativi e i veri positivi e negativi
+# # Visualizzazione della matrice di confusione
+# plt.figure(figsize=(8, 6))
+# sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Classe 0', 'Classe 1'], yticklabels=['Classe 0', 'Classe 1'])
+# plt.xlabel('Predizione')
+# plt.ylabel('Verità')
+# plt.title('Matrice di Confusione')
+# plt.show()
+
+# # Curve ROC
+# fpr, tpr, thresholds = roc_curve(y_test, model.predict_proba(X_test)[:, 1])
+# roc_auc = auc(fpr, tpr)
+
+# # fornisce una visione complessiva delle prestazioni del modello al variare della soglia di decisione
+# # Visualizzazione della curva ROC
+# plt.figure(figsize=(8, 6))
+# plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+# plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+# plt.xlim([0.0, 1.0])
+# plt.ylim([0.0, 1.05])
+# plt.xlabel('Tasso di Falsi Positivi')
+# plt.ylabel('Tasso di Veri Positivi')
+# plt.title('Curva ROC')
+# plt.legend(loc="lower right")
+# plt.show()
