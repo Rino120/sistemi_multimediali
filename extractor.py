@@ -24,15 +24,15 @@ def extract_features(congiuntiva_region):
     print("livello emoglobina: ", hemoglobin_level);
 
     # Visualizza l'immagine originale e la componente rossa
-    plt.subplot(1, 2, 1)
-    plt.imshow(cv2.cvtColor(congiuntiva_region, cv2.COLOR_BGR2RGB))
-    plt.title('Immagine originale')
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(cv2.cvtColor(congiuntiva_region, cv2.COLOR_BGR2RGB))
+    # plt.title('Immagine originale')
 
-    plt.subplot(1, 2, 2)
-    plt.imshow(red_channel, cmap='gray')
-    plt.title('Componente rossa')
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(red_channel, cmap='gray')
+    # plt.title('Componente rossa')
 
-    plt.show()
+    # plt.show()
 
     # Restituzione delle feature estratte come un dizionario
     return {

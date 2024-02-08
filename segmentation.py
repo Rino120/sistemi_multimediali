@@ -31,7 +31,7 @@ def segmentation_congiuntiva(image):
     congiuntiva_region = np.where(mask > 0, image, 0)
 
     # Visualizza l'immagine originale e la parte della congiuntiva
-    io.imshow_collection([image, congiuntiva_region])
-    io.show()
+    # io.imshow_collection([image, congiuntiva_region])
+    # io.show()
 
     return congiuntiva_region

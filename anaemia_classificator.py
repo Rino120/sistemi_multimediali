@@ -11,8 +11,10 @@ import seaborn as sns
 # per la segmentazione delle immagini
 from segmentation import segmentation_congiuntiva
 
-# eper l'estrazione delle feature
+# per l'estrazione delle feature
 from extractor import extract_features
+
+from statistic_graphic import draw_graphic
 
 # Percorso alla cartella contenente le immagini
 # inserire percorso dataset
@@ -32,7 +34,10 @@ print(excel_file_path);
 # aggiungi al data frame relativo al file excel
 excel_df = pd.read_excel(excel_file_path, usecols=['Codice', 'Sesso', 'Età'], header=1)
 
-print(excel_df.head())
+# data frame contenente solo le informazioni relative alle immagini selezionate
+eyes_df = pd.DataFrame(columns=['Codice', 'Sesso', 'Età'])
+
+# print(excel_df.head())
 
 # Lista per memorizzare le feature e le etichette
 labels_list = []
@@ -52,6 +57,15 @@ for filename in os.listdir(image_folder_path):
         image_code = '_'.join(filename.split('_')[:2])
         print("codice immagine estratto: ", image_code);
 
+        # estrai riga corrispondente dal file excel
+        selected_row = excel_df.loc[excel_df['Codice'] == image_code]
+
+        # Aggiungi la riga selezionata al nuovo DataFrame
+        # eyes_df = eyes_df.append(selected_row, ignore_index=True)
+
+        # Aggiungi la riga selezionata al nuovo DataFrame
+        eyes_df = pd.concat([eyes_df, selected_row], ignore_index=True)
+
         # Caricamento dell'immagine utilizzando skimage
         image = io.imread(image_path)
 
@@ -69,76 +83,14 @@ for filename in os.listdir(image_folder_path):
 
         # Aggiungi una nuova colonna per ciascuna feature nel DataFrame excel_df
         for feature_name, feature_value in features.items():
-            excel_df.loc[excel_df['Codice'] == image_code, feature_name] = feature_value
+            eyes_df.loc[eyes_df['Codice'] == image_code, feature_name] = feature_value
 
         # Visualizza solo la riga corrispondente all'immagine in fase di elaborazione
         print(excel_df[excel_df['Codice'] == image_code])
 
-# percentage_second_class = 0.2
+# Seleziona solo le colonne necessarie per il plot
+plot_data = eyes_df.loc[excel_df['Sesso'] == 'M', ['Età', 'hemoglobin_level', 'Sesso']]
+draw_graphic(plot_data, 'M')
 
-# # Creazione di un DataFrame pandas con le feature
-# df = pd.DataFrame(features_list)
-
-# # Stampa il DataFrame come report di esempio
-# print(df.head())
-
-# # Aggiunta di colonne con le etichette se necessario
-# df['Label'] = labels_list
-
-# df['Label'] = np.random.choice([0, 1], size=len(df), p=[1 - percentage_second_class, percentage_second_class])
-
-# print(df['Label'].value_counts())
-
-# # Esegui l'analisi delle feature e l'addestramento del modello come nel tuo caso
-# # Assumendo che tu abbia già creato e popolato il DataFrame 'df' con le feature estratte
-
-# # Divisione del DataFrame in feature (X) ed etichette (y)
-# X = df.drop('Label', axis=1)  # Rimuovi la colonna 'Label' se presente
-# y = df['Label']
-
-# # Divisione del dataset in set di addestramento e set di test
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# # Creazione e addestramento del modello di regressione logistica
-# model = LogisticRegression()
-# model.fit(X_train, y_train)
-
-# # Predizioni sul set di test
-# predictions = model.predict(X_test)
-
-# # Valutazione delle prestazioni del modello
-# accuracy = accuracy_score(y_test, predictions)
-# report = classification_report(y_test, predictions)
-# conf_matrix = confusion_matrix(y_test, predictions)
-
-# # Stampa risultati
-# print(f'Accuracy: {accuracy}')
-# print(f'Classification Report:\n{report}')
-# print(f'Confusion Matrix:\n{conf_matrix}')
-
-# # servono per capire quanto bene lavora il modello di regressione logistica
-# # matrice di confusione valuta i falsi positivi e negativi e i veri positivi e negativi
-# # Visualizzazione della matrice di confusione
-# plt.figure(figsize=(8, 6))
-# sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Classe 0', 'Classe 1'], yticklabels=['Classe 0', 'Classe 1'])
-# plt.xlabel('Predizione')
-# plt.ylabel('Verità')
-# plt.title('Matrice di Confusione')
-# plt.show()
-
-# # Curve ROC
-# fpr, tpr, thresholds = roc_curve(y_test, model.predict_proba(X_test)[:, 1])
-# roc_auc = auc(fpr, tpr)
-
-# # fornisce una visione complessiva delle prestazioni del modello al variare della soglia di decisione
-# # Visualizzazione della curva ROC
-# plt.figure(figsize=(8, 6))
-# plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
-# plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-# plt.xlim([0.0, 1.0])
-# plt.ylim([0.0, 1.05])
-# plt.xlabel('Tasso di Falsi Positivi')
-# plt.ylabel('Tasso di Veri Positivi')
-# plt.title('Curva ROC')
-# plt.legend(loc="lower right")
-# plt.show()
+plot_data = eyes_df.loc[excel_df['Sesso'] == 'F', ['Età', 'hemoglobin_level', 'Sesso']]
+draw_graphic(plot_data, 'F')
