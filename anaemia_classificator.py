@@ -2,9 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from skimage import io
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, auc, classification_report, confusion_matrix, roc_curve
 import matplotlib.pyplot as plt
 import seaborn as sns
 

@@ -37,5 +37,4 @@ def extract_features(congiuntiva_region):
     # Restituzione delle feature estratte come un dizionario
     return {
         'hemoglobin_level': hemoglobin_level,
-        # Aggiungi altre feature qui in base alle tue esigenze
     } 
