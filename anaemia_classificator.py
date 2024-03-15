@@ -1,94 +1,102 @@
-import os
-import numpy as np
-import pandas as pd
-from skimage import io
-from sklearn.linear_model import LogisticRegression
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-# per la segmentazione delle immagini
-from segmentation import segmentation_congiuntiva
+import os
 
 # per l'estrazione delle feature
 from extractor import extract_features
+from segmentation import segmentation_congiuntiva
 
-from statistic_graphic import draw_graphic
+# from keras.preprocessing.image import ImageDataGenerator
 
-# Percorso alla cartella contenente le immagini
-# inserire percorso dataset
-script_directory = os.path.dirname(os.path.abspath(__file__))
-image_folder_path = os.path.join(script_directory, 'dataset')
+# 1. Passa il dataset e suddividilo in train, vbalidation e test set. Definizione delle classi
+dataset_directory = os.path.dirname(os.path.abspath(__file__))
 
-print("Percorso cartella: ", image_folder_path);
+class_names = ["a rischio", "non a rischio"]
 
-# Leggi file excel
-# Sostituisci 'nome_file_excel.xlsx' con il nome effettivo del tuo file Excel
-script_directory = os.path.dirname(os.path.abspath(__file__))
-excel_file_path = os.path.join(script_directory, 'dataset_pazienti.xlsx')
+# ottengo le directory contenenti i dataset
+train_directory = os.path.join(dataset_directory, 'dataset\\train')
+validation_directory = os.path.join(dataset_directory, 'dataset\\validation')
+test_directory = os.path.join(dataset_directory, 'dataset\\test')
 
-print(excel_file_path);
+print("path: ", train_directory)
+print("path: ", validation_directory)
+print("path: ", test_directory)
 
-# leggi le colonne codice, sesso, eta della riga 2 dal file excel
-# aggiungi al data frame relativo al file excel
-excel_df = pd.read_excel(excel_file_path, usecols=['Codice', 'Sesso', 'Età'], header=1)
+# 2. Estrazione delle feaeture dalle immagini gia segmentate del train set
+# crea funzione per rendere il tutto piu leggibile
 
-# data frame contenente solo le informazioni relative alle immagini selezionate
-eyes_df = pd.DataFrame(columns=['Codice', 'Sesso', 'Età'])
+# contiene le feature di tutte le immagini presenti nel train set
+train_features = []
 
-# print(excel_df.head())
+# labels per ogni immagine presente nel train set
+train_labels = []
 
-# Lista per memorizzare le feature e le etichette
-labels_list = []
+# Cicla attraverso tutte le immagini nella directory di addestramento
+# for file_name in os.listdir(train_directory):
+#         class_dir = os.path.join(train_directory, file_name)
+#         if file_name.endswith('.jpg') or file_name.endswith('.png'):
+#             train_image_path = os.path.join(train_directory, file_name)
 
-# Definizione della soglia per i livelli di emoglobina
-soglia = 0.5  # Modifica questo valore in base ai tuoi requisiti
+#             print(train_image_path)
 
-# Ciclo attraverso le immagini nella cartella
-for filename in os.listdir(image_folder_path):
-    print("entro nel ciclo for...");
-    if filename.endswith('.jpg') or filename.endswith('.png'):
-        print("entro nell'if...");
-        # Costruzione del percorso completo dell'immagine
-        image_path = os.path.join(image_folder_path, filename)
+#             # Estrai le caratteristiche dall'immagine e aggiungile a train_features
+#             try:
+#                 # Prova ad estrarre le caratteristiche dall'immagine
+#                 features = extract_features(train_image_path)
+#                 train_features.append(features)
 
-        # Estrai il codice dell'immagine dal nome del file (T_i da T_i_84375893)
-        image_code = '_'.join(filename.split('_')[:2])
-        print("codice immagine estratto: ", image_code);
+#                 # aggiungere assegnazione dell'etichetta, classe di appertenenza dell'immagine
+#             except Exception as e:
+#                 # Se si verifica un errore, stampa il messaggio di errore
+#                 print(f"Errore durante l'estrazione delle caratteristiche dall'immagine {train_image_path}: {str(e)}")
 
-        # estrai riga corrispondente dal file excel
-        selected_row = excel_df.loc[excel_df['Codice'] == image_code]
 
-        # Aggiungi la riga selezionata al nuovo DataFrame
-        # eyes_df = eyes_df.append(selected_row, ignore_index=True)
+# 3. Segmentazione delle immagini presenti nel test set
+for file_name in os.listdir(test_directory):
+    class_dir = os.path.join(test_directory, file_name)
+    if file_name.endswith('.jpg') or file_name.endswith('.png'):
+        test_image_path = os.path.join(test_directory, file_name)
 
-        # Aggiungi la riga selezionata al nuovo DataFrame
-        eyes_df = pd.concat([eyes_df, selected_row], ignore_index=True)
+        print(test_image_path)
 
-        # Caricamento dell'immagine utilizzando skimage
-        image = io.imread(image_path)
+        # segmenta le immagini del test set per una maggiore facilita di analisi delle caratteristiche
+        try:
+            # provvisorio
+            # creare array dove salvare il test set processato
+            # da migliorare algoritmo di segmentazione
+            congiuntiva = segmentation_congiuntiva(test_image_path)
+        except Exception as e:
+            # Se si verifica un errore, stampa il messaggio di errore
+            print(f"Errore durante la segmentazione dell'immagine {test_image_path}: {str(e)}")
 
-        # Esegui la segmentazione per isolare la parte relativa alla congiuntiva
-        congiuntiva_region = segmentation_congiuntiva(image)
+# 4. Applicazione del modello (Regressione logistica) sul test set
 
-        # Esegui l'estrazione delle feature sulla parte della congiuntiva
-        features = extract_features(congiuntiva_region)
+# 5. Valutazione dei risultati e prestazioni del modello tramite precisione, accuratezza e richiamo
 
-        # Determina l'etichetta in base ai livelli di emoglobina
-        label = 1 if features['hemoglobin_level'] > soglia else 0  # Personalizza la soglia secondo necessità
+# 6. Itera e ottimizza il modello
 
-        # Aggiunta dell'etichetta se necessario
-        labels_list.append(label)
+# Definisci i generatori di immagini per set di addestramento, validazione e test
+# train_datagen = ImageDataGenerator(rescale=1./255)
+# validation_datagen = ImageDataGenerator(rescale=1./255)
+# test_datagen = ImageDataGenerator(rescale=1./255)
 
-        # Aggiungi una nuova colonna per ciascuna feature nel DataFrame excel_df
-        for feature_name, feature_value in features.items():
-            eyes_df.loc[eyes_df['Codice'] == image_code, feature_name] = feature_value
+# # Definisci i generatori di dati per caricare le immagini dai rispettivi percorsi
+# train_generator = train_datagen.flow_from_directory(
+#     train_dir,
+#     target_size=(img_height, img_width),  # Specifica le dimensioni delle immagini
+#     batch_size=batch_size,
+#     class_mode='binary')  # Imposta la modalità di classificazione
 
-        # Visualizza solo la riga corrispondente all'immagine in fase di elaborazione
-        print(excel_df[excel_df['Codice'] == image_code])
+# validation_generator = validation_datagen.flow_from_directory(
+#     validation_dir,
+#     target_size=(img_height, img_width),
+#     batch_size=batch_size,
+#     class_mode='binary')
 
-# Seleziona solo le colonne necessarie per il plot
-plot_data = eyes_df.loc[excel_df['Sesso'] == 'M', ['Età', 'hemoglobin_level', 'Sesso']]
-draw_graphic(plot_data, 'M')
+# test_generator = test_datagen.flow_from_directory(
+#     test_dir,
+#     target_size=(img_height, img_width),
+#     batch_size=batch_size,
+#     class_mode='binary')
 
-plot_data = eyes_df.loc[excel_df['Sesso'] == 'F', ['Età', 'hemoglobin_level', 'Sesso']]
-draw_graphic(plot_data, 'F')
+# Ora hai generatori di dati pronti per l'addestramento, la validazione e il test
+# Puoi passare questi generatori direttamente ai metodi di addestramento e valutazione del modello
