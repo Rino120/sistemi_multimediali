@@ -13,8 +13,6 @@ import seaborn as sns
 
 from tqdm import tqdm
 
-from PIL import Image
-
 # per l'estrazione delle feature
 from skimage import io
 from extractor import extract_features
@@ -49,26 +47,6 @@ train_labels = []
 
 # Cicla attraverso tutte le immagini nella directory di addestramento
 print("Estrazione delle feature dal train set...")
-# for file_name in os.listdir(train_directory):
-#         class_dir = os.path.join(train_directory, file_name)
-#         if file_name.endswith('.jpg') or file_name.endswith('.png'):
-#             train_image_path = os.path.join(train_directory, file_name)
-
-#             # print(train_image_path)
-
-#             # Estrai le caratteristiche dall'immagine e aggiungile a train_features
-#             try:
-#                 # Prova ad estrarre le caratteristiche dall'immagine
-#                 features = extract_features(train_image_path)
-#                 train_features.append(features)
-
-#                 # aggiungere assegnazione dell'etichetta, classe di appertenenza dell'immagine
-#                 # provvisorio aggiungere algoritmo per assegnazione delle etichette
-#                 label = assign_label(features)
-#                 train_labels.append(label)
-#             except Exception as e:
-#                 # Se si verifica un errore, stampa il messaggio di errore
-#                 print(f"Errore durante l'estrazione delle caratteristiche dall'immagine {train_image_path}: {str(e)}")
 
 # Creare una lista dei file nella directory di addestramento
 train_files = [file for file in os.listdir(train_directory) if file.endswith('.jpg') or file.endswith('.png')]
@@ -94,22 +72,6 @@ for file_name in tqdm(train_files, desc="Processing images", unit="image"):
 congiuntivas = [] # insieme delle immagini di test segmentate
 
 print("segmentazione delle immagini del test set...")
-# for file_name in os.listdir(test_directory):
-#     class_dir = os.path.join(test_directory, file_name)
-#     if file_name.endswith('.jpg') or file_name.endswith('.png'):
-#         test_image_path = os.path.join(test_directory, file_name)
-#         # print(test_image_path)
-
-#         # segmenta le immagini del test set per una maggiore facilita di analisi delle caratteristiche
-#         try:
-#             # provvisorio
-#             # creare array dove salvare il test set processato
-#             # da migliorare algoritmo di segmentazione
-#             congiuntiva = segmentation_congiuntiva(test_image_path)
-#             congiuntivas.append(segmentation_congiuntiva(test_image_path))
-#         except Exception as e:
-#             # Se si verifica un errore, stampa il messaggio di errore
-#             print(f"Errore durante la segmentazione dell'immagine {test_image_path}: {str(e)}")
 
 # Ottieni la lista dei file nella directory del test set
 test_files = [file for file in os.listdir(test_directory) if file.endswith('.jpg') or file.endswith('.png')]
@@ -137,11 +99,8 @@ print("Estrazione delle feature dal test set...")
 for congiuntiva_image in tqdm(congiuntivas, desc="Processing test images", unit="image"):
      # Estrai le caratteristiche dall'immagine e aggiungile a train_features
     try:
-        # Converti l'array numpy in un'immagine PIL
-        pil_image = Image.fromarray(congiuntiva_image)
-
         # Prova ad estrarre le caratteristiche dall'immagine
-        features = extract_features(pil_image)
+        features = extract_features(congiuntiva_image)
         test_features.append(features)
 
         # aggiungere assegnazione dell'etichetta, classe di appertenenza dell'immagine
