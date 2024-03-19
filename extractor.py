@@ -2,13 +2,12 @@ import numpy as np
 from skimage import io, color, filters, morphology
 import matplotlib.pyplot as plt
 
-def extract_features(image_path):
+def extract_features(image):
     # print("chiamata ad extract_features")
     # print("image path: ", image_path)
 
     # Carica l'immagine utilizzando OpenCV
     # image = cv2.imread(image_path)
-    image = io.imread(image_path)
 
     # plt.imshow(image)
     # plt.axis('off')  # Nasconde gli assi
@@ -19,13 +18,13 @@ def extract_features(image_path):
     # Estrae la percentuale di rosso presente nell'immagine
     red_level = extract_red_level(image)
 
-    print("percentuale di rosso: ", red_level)
+    # print("percentuale di rosso: ", red_level)
 
     # estrai le zone chiare dalle congiutive, di conseguenza il numero di pixel bianchi presente nell'immagine
     # ritorna la percentuale di bianco presente nell'immagine
     white_level = extract_white_level(image);
 
-    print("percentuale di bianco: ", white_level)
+    # print("percentuale di bianco: ", white_level)
     
     # Altre caratteristiche...
     

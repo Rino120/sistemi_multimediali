@@ -36,9 +36,7 @@ import numpy as np
 
 #     return congiuntiva_region
 
-def segmentation_congiuntiva(image_path):
-    image = image = io.imread(image_path)
-
+def segmentation_congiuntiva(image):
     # Converti l'immagine in spazio colore Lab
     lab_image = color.rgb2lab(image)
 
@@ -64,7 +62,7 @@ def segmentation_congiuntiva(image_path):
     congiuntiva_region = np.where(mask > 0, image, 0)
 
     # Visualizza l'immagine originale e la parte della congiuntiva
-    io.imshow_collection([image, congiuntiva_region])
-    io.show()
+    # io.imshow_collection([image, congiuntiva_region])
+    # io.show()
 
     return congiuntiva_region
