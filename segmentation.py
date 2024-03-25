@@ -1,9 +1,9 @@
-import skimage.io as io
 import skimage.filters as filters
-import skimage.segmentation as seg
-import skimage.color as color
+from skimage import io, color, segmentation
 import cv2
 import numpy as np
+
+import matplotlib.pyplot as plt
 
 from PIL import Image
 
@@ -38,5 +38,7 @@ def segmentation_congiuntiva(image):
 
     # converti l'array in immagine
     congiuntiva_image = Image.fromarray(congiuntiva_region)
+
+    # congiuntiva_image.show()
 
     return congiuntiva_image

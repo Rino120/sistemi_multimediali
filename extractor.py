@@ -2,13 +2,11 @@ import numpy as np
 from skimage import io, color, filters, morphology
 import matplotlib.pyplot as plt
 
+from skimage.filters import gabor
+from skimage import data, color
+from scipy import ndimage as ndi
+
 def extract_features(image):
-    # print("chiamata ad extract_features")
-    # print("image path: ", image_path)
-
-    # Carica l'immagine utilizzando OpenCV
-    # image = cv2.imread(image_path)
-
     # plt.imshow(image)
     # plt.axis('off')  # Nasconde gli assi
     # plt.show()
@@ -27,6 +25,8 @@ def extract_features(image):
     # print("percentuale di bianco: ", white_level)
     
     # Altre caratteristiche...
+    # print("\nlivello rosso: ", red_level)
+    # print("livello bianco: ", white_level)
     
     # return red_level piu le altre feature
     return red_level, white_level
@@ -76,15 +76,5 @@ def extract_white_level(image):
 
     # print("Numero di zone bianche:", num_white_regions)
     # print("Percentuale di bianco nell'immagine:", white_percentage)
-
-    # # Visualizza l'immagine originale e la maschera delle regioni bianche
-    # fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-    # axes[0].imshow(image)
-    # axes[0].set_title("Immagine Originale")
-    # axes[0].axis('off')
-    # axes[1].imshow(white_mask, cmap='gray')
-    # axes[1].set_title("Maschera delle Regioni Bianche")
-    # axes[1].axis('off')
-    # plt.show()
 
     return white_percentage
