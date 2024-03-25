@@ -5,14 +5,7 @@ import os
 from sklearn.linear_model import LogisticRegression
 
 # valutazione del modello
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import log_loss
-
-import matplotlib.pyplot as plt
-
-from PIL import Image
-
-from tqdm import tqdm
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # per l'estrazione delle feature
 from skimage import io
@@ -21,6 +14,10 @@ from segmentation import segmentation_congiuntiva
 
 from label_assignator import assign_label
 
+# utils
+from PIL import Image
+from tqdm import tqdm
+
 # 1. Passa il dataset e suddividilo in train, vbalidation e test set. Definizione delle classi
 dataset_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,11 +25,9 @@ class_names = ["a rischio", "non a rischio"]
 
 # ottengo le directory contenenti i dataset
 train_directory = os.path.join(dataset_directory, 'dataset\\train')
-validation_directory = os.path.join(dataset_directory, 'dataset\\validation')
 test_directory = os.path.join(dataset_directory, 'dataset\\test')
 
 print("path: ", train_directory)
-print("path: ", validation_directory)
 print("path: ", test_directory)
 
 # 2. Estrazione delle feaeture dalle immagini gia segmentate del train set
@@ -50,10 +45,10 @@ y_train = []
 # Cicla attraverso tutte le immagini nella directory di addestramento
 print("Estrazione delle feature dal train set...")
 
-# Creare una lista dei file nella directory di addestramento
+# lista dei file nel train set
 train_files = [file for file in os.listdir(train_directory) if file.endswith('.jpg') or file.endswith('.png')]
 
-# Utilizzare tqdm per iterare sui file con una barra di avanzamento
+# con tqdm è possibile avere una barra di caricamento
 for file_name in tqdm(train_files, desc="Processing images", unit="image"):
     class_dir = os.path.join(train_directory, file_name)
     train_image_path = os.path.join(train_directory, file_name)
@@ -78,25 +73,19 @@ print("segmentazione delle immagini del test set...")
 # Ottieni la lista dei file nella directory del test set
 test_files = [file for file in os.listdir(test_directory) if file.endswith('.jpg') or file.endswith('.png')]
 
-# # Utilizza tqdm per iterare sui file con una barra di avanzamento
+# con tqdm è possibile avere una barra di caricamento
 for file_name in tqdm(test_files, desc="Processing test images", unit="image"):
     class_dir = os.path.join(test_directory, file_name)
     test_image_path = os.path.join(test_directory, file_name)
 
-    # Esegui le operazioni su ciascuna immagine
     try:
         # segmenta le immagini del test set
         image = io.imread(test_image_path)
 
-        # if(file_name == "test_occhio.png"): 
-        #     if image.shape[2] == 4:
-        #         # Se l'immagine ha quattro canali, rimuovi il quarto canale (alfa)
-        #         image = image[:, :, :3]  # Mantieni solo i primi tre canali (RGB)
-
-        #     plt.imshow(image)
-        #     plt.axis('off')  # Nasconde gli assi
-        #     plt.show()
-        #     congiuntiva.show()
+        # Se l'immagine ha quattro canali, rimuovi il quarto canale (alfa)
+        # la segmentazione agisce solo sui i canali rgb, canale alfa ignorato
+        if image.shape[2] == 4:
+            image = image[:, :, :3] 
 
         congiuntiva = segmentation_congiuntiva(image)
         congiuntivas.append(congiuntiva)
@@ -115,11 +104,9 @@ print("Estrazione delle feature dal test set...")
 for congiuntiva_image in tqdm(congiuntivas, desc="Processing test images", unit="image"):
      # Estrai le caratteristiche dall'immagine e aggiungile a X_train
     try:
-        # Prova ad estrarre le caratteristiche dall'immagine
         # Converti l'immagine in un array NumPy 
         image_array = np.array(congiuntiva_image)
         features = extract_features(image_array)
-        print(features)
         X_test.append(features)
 
         # assegna l'etichetta
@@ -128,23 +115,6 @@ for congiuntiva_image in tqdm(congiuntivas, desc="Processing test images", unit=
     except Exception as e:
     # Se si verifica un errore, stampa il messaggio di errore
         print(f"Errore durante l'estrazione delle caratteristiche dall'immagine {image}: {str(e)}")
-
-# Utilizza tqdm per iterare sui file con una barra di avanzamento
-# for file_name in tqdm(test_files, desc="Processing images", unit="image"):
-#     class_dir = os.path.join(test_directory, file_name)
-#     test_image_path = os.path.join(test_directory, file_name)
-
-#     # Esegui le operazioni su ciascuna immagine
-#     try:
-#         # segmenta le immagini del test set
-#         image = io.imread(test_image_path)
-#         features = extract_features(image)
-#         X_test.append(features)
-
-#         label = assign_label(features)
-#         y_true.append(label)
-#     except Exception as e:
-#         print(f"Errore durante la segmentazione dell'immagine {test_image_path}: {str(e)}")
 
 # 4. Addestramento del modello (Regressione logistica) sul train set
 logistic_regression_model = LogisticRegression()
@@ -159,6 +129,8 @@ except Exception as e:
 print("Applicazione del modello...")
 try:
     y_pred = logistic_regression_model.predict(X_test)
+    print("Predizioni del modello: ", y_pred)
+    print("Valori reali: ", y_true)
 except Exception as e:
     print(f"Errore nell'applicazione del modello: {str(e)}")
 
@@ -168,16 +140,22 @@ accuracy = accuracy_score(y_true, y_pred)
 
 print("Accuracy:", accuracy)
 
-# predizioni del modello
-y_pred_proba = logistic_regression_model.predict_proba(X_test)
+# 5.2 calcolo della precisione del modello
+# Calcola la precisione
+precision = precision_score(y_true, y_pred)
 
-# 5.2 verifica la perdita logaritmica
-# misura la discrepanza tra le previsioni del modello e le etichette di classe reali
-# calcola la perdita logaritmica
-loss = log_loss(y_true, y_pred_proba)
+print("Precision:", precision)
 
-print("Log Loss:", loss)
+# 5.3 Calcola il richiamo
+# misura la capacità del modello di identificare correttamente tutti gli esempi positivi
+# tra quelli effettivamente positivi presenti nel dataset
+recall = recall_score(y_true, y_pred)
 
-# 6. Visualizzazione delle predizioni
-    
-# 7. itera e valuta il modello
+print("Recall:", recall)
+
+# Calcola l'F1-Score
+# la media armonica tra precisione e richiamo, utile quando le classi hanno un numero diverso
+# di campioni o quando gli errori di falsi positivi e falsi negativi hanno conseguenze diverse
+f1 = f1_score(y_true, y_pred)
+
+print("F1 score:", f1)
