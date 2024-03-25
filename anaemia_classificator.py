@@ -1,196 +1,161 @@
+
 import os
-import cv2
-import numpy as np
-import pandas as pd
-from skimage import io, color, feature
-from sklearn.model_selection import train_test_split
+
+# regressione logistica
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, auc, classification_report, confusion_matrix, roc_curve
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-# Funzione per l'estrazione delle feature da un'immagine
-def extract_features(image_path):
-    print("chiamata a extract features...")
-    print("Percorso immagine: ", image_path)
-    # Caricamento dell'immagine utilizzando la libreria skimage
-    image = cv2.imread(image_path)
+# valutazione del modello
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-    # gestisce il caso in cui non legge l'immagine
-    if image is None:
-        print(f"Errore: Impossibile leggere l'immagine {image_path}")
-        return None
+# per l'estrazione delle feature
+from skimage import io
+from extractor import extract_features, np
+from segmentation import segmentation_congiuntiva
 
-    # Conversione in scala di grigi, se l'immagine non è già in scala di grigi
-    gray_image = color.rgb2gray(image)
+from label_assignator import assign_label
 
-    # Esempio di estrazione di feature: utilizziamo il numero medio di edge rilevati con Canny
-    canny_edges = feature.canny(gray_image)
-    canny_edges_mean = canny_edges.mean()
+# utils
+from PIL import Image
+from tqdm import tqdm
 
-    # Visualizza l'immagine originale e i bordi rilevati con Canny
-    plt.subplot(1, 2, 1)
-    plt.imshow(image)
-    plt.title('Immagine originale')
+# 1. Passa il dataset e suddividilo in train, vbalidation e test set. Definizione delle classi
+dataset_directory = os.path.dirname(os.path.abspath(__file__))
 
-    plt.subplot(1, 2, 2)
-    plt.imshow(canny_edges, cmap='gray')
-    plt.title('Bordi con Canny')
+class_names = ["a rischio", "non a rischio"]
 
-    plt.show()
+# ottengo le directory contenenti i dataset
+train_directory = os.path.join(dataset_directory, 'dataset\\train')
+test_directory = os.path.join(dataset_directory, 'dataset\\test')
 
-    # Puoi aggiungere ulteriori feature qui in base alle tue esigenze
-    # ...
+print("path: ", train_directory)
+print("path: ", test_directory)
 
-    # Restituzione delle feature estratte come un dizionario
-    return {
-        'canny_edges_mean': canny_edges_mean,
-        # Aggiungi altre feature qui se necessario
-    }
+# 2. Estrazione delle feaeture dalle immagini gia segmentate del train set
+# crea funzione per rendere il tutto piu leggibile
 
-# Funzione per estrarre la parte della congiuntiva da un'immagine
-def segment_congiuntiva(original_image):
-    print("chiamata a segmentcongiutiva...");
-    # Converti l'immagine in scala di grigi
-    gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+# contiene le feature di tutte le immagini presenti nel train set
+# caratteristiche del set di addestramento
+X_train = []
 
-    # Applica un filtro di smooth per ridurre il rumore
-    blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+# labels per ogni immagine presente nel train set
+# etichette corrispondenti del set di addestramento
+# per il set di addestramento assegnare le label in maniera manuale
+y_train = []
 
-    # Esegui la segmentazione utilizzando il metodo di Otsu
-    _, binary_mask = cv2.threshold(blurred_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+# Cicla attraverso tutte le immagini nella directory di addestramento
+print("Estrazione delle feature dal train set...")
 
-    # Trova i contorni nella maschera binaria
-    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+# lista dei file nel train set
+train_files = [file for file in os.listdir(train_directory) if file.endswith('.jpg') or file.endswith('.png')]
 
-    # Trova il contorno più grande (presumibilmente la congiuntiva)
-    largest_contour = max(contours, key=cv2.contourArea)
+# con tqdm è possibile avere una barra di caricamento
+for file_name in tqdm(train_files, desc="Processing images", unit="image"):
+    class_dir = os.path.join(train_directory, file_name)
+    train_image_path = os.path.join(train_directory, file_name)
 
-    # Crea una maschera vuota delle stesse dimensioni dell'immagine originale
-    mask = np.zeros_like(original_image)
+    # Estrai le caratteristiche e assegna l'etichetta a ciascuna immagine
+    try:
+        image = io.imread(train_image_path)
+        features = extract_features(image)
+        X_train.append(features)
 
-    # Disegna il contorno sulla maschera
-    cv2.drawContours(mask, [largest_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
+        label = assign_label(features)
+        y_train.append(label)
+    except Exception as e:
+        print(f"Errore durante l'estrazione delle caratteristiche dall'immagine {train_image_path}: {str(e)}")
 
-    # Estrai la parte dell'immagine originale corrispondente alla maschera
-    congiuntiva_region = cv2.bitwise_and(original_image, mask)
 
-    # Visualizza l'immagine originale e la parte della congiuntiva
-    plt.subplot(1, 2, 1)
-    plt.imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
-    plt.title('Immagine originale')
+# 3. Segmentazione delle immagini presenti nel test set
+congiuntivas = [] # insieme delle immagini di test segmentate
 
-    plt.subplot(1, 2, 2)
-    plt.imshow(cv2.cvtColor(congiuntiva_region, cv2.COLOR_BGR2RGB))
-    plt.title('Parte della congiuntiva')
+print("segmentazione delle immagini del test set...")
 
-    plt.show()
+# Ottieni la lista dei file nella directory del test set
+test_files = [file for file in os.listdir(test_directory) if file.endswith('.jpg') or file.endswith('.png')]
 
-    return congiuntiva_region
+# con tqdm è possibile avere una barra di caricamento
+for file_name in tqdm(test_files, desc="Processing test images", unit="image"):
+    class_dir = os.path.join(test_directory, file_name)
+    test_image_path = os.path.join(test_directory, file_name)
 
-# Percorso alla cartella contenente le immagini
-# inserire percorso dataset
-script_directory = os.path.dirname(os.path.abspath(__file__))
-image_folder_path = os.path.join(script_directory, 'dataset')
+    try:
+        # segmenta le immagini del test set
+        image = io.imread(test_image_path)
 
-print("Percorso cartella: ", image_folder_path);
+        # Se l'immagine ha quattro canali, rimuovi il quarto canale (alfa)
+        # la segmentazione agisce solo sui i canali rgb, canale alfa ignorato
+        if image.shape[2] == 4:
+            image = image[:, :, :3] 
 
-# Lista per memorizzare le feature e le etichette
-features_list = []
-labels_list = []
+        congiuntiva = segmentation_congiuntiva(image)
+        congiuntivas.append(congiuntiva)
 
-# Ciclo attraverso le immagini nella cartella
-for filename in os.listdir(image_folder_path):
-    print("entro nel ciclo for...");
-    if filename.endswith('.jpg') or filename.endswith('.png'):
-        print("entro nell'if...");
-        # Costruzione del percorso completo dell'immagine
-        image_path = os.path.join(image_folder_path, filename)
+    except Exception as e:
+        print(f"Errore durante la segmentazione dell'immagine {test_image_path}: {str(e)}")
+                
+# 3.1 Estrazione delle feature dal test set segmentato
+# caratteristiche del set di test
+X_test = []
 
-        print("percorso immagine: ", image_path);
+# etichette reali delle immagini di test
+y_true = []
 
-        # Caricamento dell'immagine utilizzando OpenCV
-        original_image = cv2.imread(image_path)
+print("Estrazione delle feature dal test set...")
+for congiuntiva_image in tqdm(congiuntivas, desc="Processing test images", unit="image"):
+     # Estrai le caratteristiche dall'immagine e aggiungile a X_train
+    try:
+        # Converti l'immagine in un array NumPy 
+        image_array = np.array(congiuntiva_image)
+        features = extract_features(image_array)
+        X_test.append(features)
 
-        # Esegui la segmentazione per isolare la parte relativa alla congiuntiva
-        congiuntiva_region = segment_congiuntiva(original_image)
+        # assegna l'etichetta
+        label = assign_label(features)
+        y_true.append(label)
+    except Exception as e:
+    # Se si verifica un errore, stampa il messaggio di errore
+        print(f"Errore durante l'estrazione delle caratteristiche dall'immagine {image}: {str(e)}")
 
-        # Esegui l'estrazione delle feature sulla parte della congiuntiva
-        # features = extract_features(congiuntiva_region)
-        features = extract_features(image_path)
+# 4. Addestramento del modello (Regressione logistica) sul train set
+logistic_regression_model = LogisticRegression()
 
-        # Determina l'etichetta in base alle tue condizioni
-        # Ad esempio, se il nome del file contiene 'congiuntiva', l'etichetta potrebbe essere 1, altrimenti 0
-        label = 1 if 'congiuntiva' in filename.lower() else 0
+print("Addestramento del modello...")
+try:
+    logistic_regression_model.fit(X_train, y_train)
+except Exception as e:
+    print(f"Errore nell'addestramento del modello: {str(e)}")
 
-        # Aggiunta dell'etichetta se necessario
-        labels_list.append(label)
+# 5. Applicazione del modello 
+print("Applicazione del modello...")
+try:
+    y_pred = logistic_regression_model.predict(X_test)
+    print("Predizioni del modello: ", y_pred)
+    print("Valori reali: ", y_true)
+except Exception as e:
+    print(f"Errore nell'applicazione del modello: {str(e)}")
 
-        # Aggiunta delle feature alla lista
-        features_list.append(features)
+# 5.1 verifica l'accuratezza del modello
+# calcola l'accuratezza
+accuracy = accuracy_score(y_true, y_pred)
 
-percentage_second_class = 0.2
+print("Accuracy:", accuracy)
 
-# Creazione di un DataFrame pandas con le feature
-df = pd.DataFrame(features_list)
+# 5.2 calcolo della precisione del modello
+# Calcola la precisione
+precision = precision_score(y_true, y_pred)
 
-# Stampa il DataFrame come report di esempio
-print(df.head())
+print("Precision:", precision)
 
-# Aggiunta di colonne con le etichette se necessario
-df['Label'] = labels_list
+# 5.3 Calcola il richiamo
+# misura la capacità del modello di identificare correttamente tutti gli esempi positivi
+# tra quelli effettivamente positivi presenti nel dataset
+recall = recall_score(y_true, y_pred)
 
-df['Label'] = np.random.choice([0, 1], size=len(df), p=[1 - percentage_second_class, percentage_second_class])
+print("Recall:", recall)
 
-print(df['Label'].value_counts())
+# Calcola l'F1-Score
+# la media armonica tra precisione e richiamo, utile quando le classi hanno un numero diverso
+# di campioni o quando gli errori di falsi positivi e falsi negativi hanno conseguenze diverse
+f1 = f1_score(y_true, y_pred)
 
-# Esegui l'analisi delle feature e l'addestramento del modello come nel tuo caso
-# Assumendo che tu abbia già creato e popolato il DataFrame 'df' con le feature estratte
-
-# Divisione del DataFrame in feature (X) ed etichette (y)
-X = df.drop('Label', axis=1)  # Rimuovi la colonna 'Label' se presente
-y = df['Label']
-
-# Divisione del dataset in set di addestramento e set di test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Creazione e addestramento del modello di regressione logistica
-model = LogisticRegression()
-model.fit(X_train, y_train)
-
-# Predizioni sul set di test
-predictions = model.predict(X_test)
-
-# Valutazione delle prestazioni del modello
-accuracy = accuracy_score(y_test, predictions)
-report = classification_report(y_test, predictions)
-conf_matrix = confusion_matrix(y_test, predictions)
-
-# Stampa risultati
-print(f'Accuracy: {accuracy}')
-print(f'Classification Report:\n{report}')
-print(f'Confusion Matrix:\n{conf_matrix}')
-
-# Visualizzazione della matrice di confusione
-plt.figure(figsize=(8, 6))
-sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Classe 0', 'Classe 1'], yticklabels=['Classe 0', 'Classe 1'])
-plt.xlabel('Predizione')
-plt.ylabel('Verità')
-plt.title('Matrice di Confusione')
-plt.show()
-
-# Curve ROC
-fpr, tpr, thresholds = roc_curve(y_test, model.predict_proba(X_test)[:, 1])
-roc_auc = auc(fpr, tpr)
-
-# Visualizzazione della curva ROC
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('Tasso di Falsi Positivi')
-plt.ylabel('Tasso di Veri Positivi')
-plt.title('Curva ROC')
-plt.legend(loc="lower right")
-plt.show()
+print("F1 score:", f1)
