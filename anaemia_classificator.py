@@ -9,13 +9,12 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 # per l'estrazione delle feature
 from skimage import io
-from extractor import extract_features, np
+from extractor import np, extract_features, assign_label
 from segmentation import segmentation_congiuntiva
 
 from label_assignator import assign_label
 
 # utils
-from PIL import Image
 from tqdm import tqdm
 
 # 1. Passa il dataset e suddividilo in train, vbalidation e test set. Definizione delle classi
@@ -136,26 +135,34 @@ except Exception as e:
 
 # 5.1 verifica l'accuratezza del modello
 # calcola l'accuratezza
-accuracy = accuracy_score(y_true, y_pred)
-
-print("Accuracy:", accuracy)
+try:
+    accuracy = accuracy_score(y_true, y_pred)
+    print("Accuracy:", accuracy)
+except Exception as e:
+    print(f"Errore nel calcolo dell'accuratezza del modello: {str(e)}")
 
 # 5.2 calcolo della precisione del modello
 # Calcola la precisione
-precision = precision_score(y_true, y_pred)
-
-print("Precision:", precision)
+try:
+    precision = precision_score(y_true, y_pred)
+    print("Precision:", precision)
+except Exception as e:
+    print(f"Errore nel calcolo della precisione del modello: {str(e)}")
 
 # 5.3 Calcola il richiamo
 # misura la capacità del modello di identificare correttamente tutti gli esempi positivi
 # tra quelli effettivamente positivi presenti nel dataset
-recall = recall_score(y_true, y_pred)
-
-print("Recall:", recall)
+try:
+    recall = recall_score(y_true, y_pred)
+    print("Recall:", recall)
+except Exception as e:
+    print(f"Errore nel calcolo del richiamo del modello: {str(e)}")
 
 # Calcola l'F1-Score
 # la media armonica tra precisione e richiamo, utile quando le classi hanno un numero diverso
 # di campioni o quando gli errori di falsi positivi e falsi negativi hanno conseguenze diverse
-f1 = f1_score(y_true, y_pred)
-
-print("F1 score:", f1)
+try:
+    f1 = f1_score(y_true, y_pred)
+    print("F1 score:", f1)
+except Exception as e:
+    print(f"Errore nel calcolo dell'f1-score del modello: {str(e)}")

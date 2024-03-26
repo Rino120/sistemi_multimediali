@@ -1,5 +1,5 @@
 import skimage.filters as filters
-from skimage import io, color, segmentation
+from skimage import color
 import cv2
 import numpy as np
 
