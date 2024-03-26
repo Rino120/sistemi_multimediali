@@ -12,8 +12,6 @@ from skimage import io
 from extractor import np, extract_features, assign_label
 from segmentation import segmentation_congiuntiva
 
-from label_assignator import assign_label
-
 # utils
 from tqdm import tqdm
 
